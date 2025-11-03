@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { Product } from '@/types/product';
 import { calculateEcoScore, getAIInsight } from '@/utils/ecoScoreCalculator';
 import { EcoScoreBadge } from './EcoScoreBadge';
+import { DangerWarning } from './DangerWarning';
+import { FeedbackForm } from './FeedbackForm';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ShoppingCart, ThumbsUp, ThumbsDown, Info } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ShoppingCart, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { brandScores, alternatives } from '@/data/products';
 import { toast } from 'sonner';
@@ -21,19 +24,26 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [showDetails, setShowDetails] = useState(false);
-  const { addToCart, updateStats, feedback, submitFeedback } = useApp();
+  const [showWarning, setShowWarning] = useState(false);
+  const { addToCart, updateStats, submitFeedback, getFeedbackForProduct } = useApp();
   const ecoScore = calculateEcoScore(product.name, product.description);
   const aiInsight = getAIInsight(ecoScore);
   const brandScore = brandScores[product.brand] || 50;
   const productAlternatives = alternatives[product.id] || [];
-  const userFeedback = feedback[product.id];
+  const userFeedback = getFeedbackForProduct(product.id);
+  const isDangerous = ecoScore.score < 50;
 
   const handleViewDetails = () => {
-    setShowDetails(true);
-    // Update stats when viewing product
-    const points = ecoScore.score > 70 ? 10 : 0;
-    const co2 = ecoScore.score > 70 ? 0.5 : 0;
-    updateStats(points, co2, ecoScore.score > 70);
+    if (isDangerous && !showWarning) {
+      setShowWarning(true);
+    } else {
+      setShowDetails(true);
+      setShowWarning(false);
+      // Update stats when viewing product
+      const points = ecoScore.score > 70 ? 10 : 0;
+      const co2 = ecoScore.score > 70 ? 0.5 : 0;
+      updateStats(points, co2, ecoScore.score > 70);
+    }
   };
 
   const handleAddToCart = () => {
@@ -43,9 +53,24 @@ export function ProductCard({ product }: ProductCardProps) {
     });
   };
 
-  const handleFeedback = (vote: 'up' | 'down') => {
-    submitFeedback(product.id, vote);
-    toast.success(vote === 'up' ? 'Thanks for your feedback! 👍' : 'Thanks for your feedback! 👎');
+  const handleFeedbackSubmit = (vote: 'up' | 'down', comment: string, images: string[]) => {
+    submitFeedback({
+      productId: product.id,
+      vote,
+      comment,
+      images,
+      timestamp: Date.now()
+    });
+    toast.success('Thank you for your detailed feedback! 🌿');
+  };
+
+  const handleProceedAnyway = () => {
+    setShowWarning(false);
+    setShowDetails(true);
+    // Update stats when viewing product
+    const points = ecoScore.score > 70 ? 10 : 0;
+    const co2 = ecoScore.score > 70 ? 0.5 : 0;
+    updateStats(points, co2, ecoScore.score > 70);
   };
 
   return (
@@ -58,6 +83,11 @@ export function ProductCard({ product }: ProductCardProps) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <EcoScoreBadge ecoScore={ecoScore} />
+          {isDangerous && (
+            <div className="absolute top-3 left-3 z-10">
+              <DangerWarning size="md" />
+            </div>
+          )}
         </div>
         
         <div className="p-4 space-y-3">
@@ -99,6 +129,65 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
       </Card>
 
+      {/* Warning Dialog */}
+      <Dialog open={showWarning} onOpenChange={setShowWarning}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <DangerWarning size="lg" />
+              <DialogTitle className="text-xl">Environmental Warning</DialogTitle>
+            </div>
+          </DialogHeader>
+          
+          <Alert variant="destructive" className="border-danger">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Not Eco-Friendly!</AlertTitle>
+            <AlertDescription>
+              This product has a low EcoScore of {ecoScore.score}. It may harm the environment due to non-sustainable materials or packaging.
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-3 mt-4">
+            <p className="text-sm text-muted-foreground">
+              {ecoScore.explanation}
+            </p>
+            
+            {productAlternatives.length > 0 && (
+              <div className="p-3 bg-success/10 border border-success rounded-lg">
+                <p className="text-sm font-semibold text-success mb-2">
+                  🌿 Consider these eco-friendly alternatives:
+                </p>
+                <div className="space-y-2">
+                  {productAlternatives.slice(0, 2).map(alt => (
+                    <div key={alt.id} className="text-xs text-muted-foreground">
+                      • {alt.name} (EcoScore: {alt.ecoScore})
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowWarning(false)}
+              className="flex-1"
+            >
+              Go Back
+            </Button>
+            <Button
+              onClick={handleProceedAnyway}
+              variant="default"
+              className="flex-1"
+            >
+              View Anyway
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Product Details Dialog */}
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -112,12 +201,25 @@ export function ProductCard({ product }: ProductCardProps) {
               className="w-full aspect-video object-cover rounded-lg"
             />
             
-            <div className="p-4 bg-muted rounded-lg space-y-2">
+            {isDangerous && (
+              <Alert variant="destructive" className="border-danger">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Environmental Impact Warning</AlertTitle>
+                <AlertDescription>
+                  This product has harmful environmental effects. Consider eco-friendly alternatives below.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className={`p-4 rounded-lg space-y-2 ${isDangerous ? 'bg-danger/10 border border-danger' : 'bg-muted'}`}>
               <div className="flex items-center justify-between">
                 <span className="font-semibold">EcoScore</span>
-                <span className="text-2xl font-bold text-primary">
-                  {ecoScore.score}
-                </span>
+                <div className="flex items-center gap-2">
+                  {isDangerous && <DangerWarning size="sm" />}
+                  <span className={`text-2xl font-bold ${isDangerous ? 'text-danger' : 'text-primary'}`}>
+                    {ecoScore.score}
+                  </span>
+                </div>
               </div>
               <p className="text-sm text-muted-foreground">
                 {ecoScore.explanation}
@@ -162,27 +264,42 @@ export function ProductCard({ product }: ProductCardProps) {
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-4 border-t">
-              <span className="text-sm text-muted-foreground">Was this score helpful?</span>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={userFeedback === 'up' ? 'default' : 'outline'}
-                  onClick={() => handleFeedback('up')}
-                >
-                  <ThumbsUp className="w-4 h-4 mr-1" />
-                  Yes
-                </Button>
-                <Button
-                  size="sm"
-                  variant={userFeedback === 'down' ? 'default' : 'outline'}
-                  onClick={() => handleFeedback('down')}
-                >
-                  <ThumbsDown className="w-4 h-4 mr-1" />
-                  No
-                </Button>
+            {userFeedback ? (
+              <div className="p-4 bg-success/10 border border-success rounded-lg space-y-3">
+                <div className="flex items-center gap-2 text-success font-semibold">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>Thank you for your feedback!</span>
+                </div>
+                
+                {userFeedback.comment && (
+                  <div>
+                    <p className="text-sm font-medium mb-1">Your comment:</p>
+                    <p className="text-sm text-muted-foreground">{userFeedback.comment}</p>
+                  </div>
+                )}
+                
+                {userFeedback.images.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Your proof images:</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {userFeedback.images.map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt={`Proof ${idx + 1}`}
+                          className="w-full aspect-square object-cover rounded"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <FeedbackForm
+                productId={product.id}
+                onSubmit={handleFeedbackSubmit}
+              />
+            )}
 
             <div className="flex items-center justify-between pt-2">
               <span className="text-2xl font-bold text-primary">

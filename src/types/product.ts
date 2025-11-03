@@ -34,3 +34,11 @@ export interface Alternative {
   price: number;
   image: string;
 }
+
+export interface ProductFeedback {
+  productId: string;
+  vote: 'up' | 'down';
+  comment?: string;
+  images: string[];
+  timestamp: number;
+}

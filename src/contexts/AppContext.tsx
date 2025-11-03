@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserStats, CartItem, Product } from '@/types/product';
+import { UserStats, CartItem, Product, ProductFeedback } from '@/types/product';
 
 interface AppContextType {
   stats: UserStats;
@@ -13,8 +13,9 @@ interface AppContextType {
   toggleTheme: () => void;
   ecoPreference: number;
   setEcoPreference: (value: number) => void;
-  feedback: Record<string, 'up' | 'down'>;
-  submitFeedback: (productId: string, vote: 'up' | 'down') => void;
+  productFeedbacks: ProductFeedback[];
+  submitFeedback: (feedback: ProductFeedback) => void;
+  getFeedbackForProduct: (productId: string) => ProductFeedback | undefined;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -24,7 +25,7 @@ const STORAGE_KEYS = {
   CART: 'ecoshopper_cart',
   THEME: 'ecoshopper_theme',
   PREFERENCE: 'ecoshopper_preference',
-  FEEDBACK: 'ecoshopper_feedback'
+  FEEDBACK: 'ecoshopper_feedbacks'
 };
 
 const defaultStats: UserStats = {
@@ -61,9 +62,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return saved ? parseInt(saved) : 50;
   });
 
-  const [feedback, setFeedback] = useState<Record<string, 'up' | 'down'>>(() => {
+  const [productFeedbacks, setProductFeedbacks] = useState<ProductFeedback[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.FEEDBACK);
-    return saved ? JSON.parse(saved) : {};
+    return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
@@ -88,8 +89,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [ecoPreference]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(feedback));
-  }, [feedback]);
+    localStorage.setItem(STORAGE_KEYS.FEEDBACK, JSON.stringify(productFeedbacks));
+  }, [productFeedbacks]);
 
   const updateStats = (points: number, co2: number, isEco: boolean) => {
     setStats(prev => {
@@ -142,8 +143,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  const submitFeedback = (productId: string, vote: 'up' | 'down') => {
-    setFeedback(prev => ({ ...prev, [productId]: vote }));
+  const submitFeedback = (feedback: ProductFeedback) => {
+    setProductFeedbacks(prev => {
+      const filtered = prev.filter(f => f.productId !== feedback.productId);
+      return [...filtered, feedback];
+    });
+  };
+
+  const getFeedbackForProduct = (productId: string) => {
+    return productFeedbacks.find(f => f.productId === productId);
   };
 
   return (
@@ -160,8 +168,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         toggleTheme,
         ecoPreference,
         setEcoPreference,
-        feedback,
-        submitFeedback
+        productFeedbacks,
+        submitFeedback,
+        getFeedbackForProduct
       }}
     >
       {children}
