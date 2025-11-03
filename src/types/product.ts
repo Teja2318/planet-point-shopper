@@ -6,6 +6,8 @@ export interface Product {
   image: string;
   brand: string;
   category: string;
+  carbonFootprint?: number; // in kg CO2
+  recyclabilityRating?: number; // 0-100
 }
 
 export interface EcoScore {
@@ -13,6 +15,9 @@ export interface EcoScore {
   level: 'high' | 'moderate' | 'low';
   explanation: string;
   keywords: string[];
+  dangerReasons?: string[]; // reasons why product is dangerous to environment
+  recyclabilityRating: number; // 0-100
+  carbonFootprint: number; // in kg CO2
 }
 
 export interface UserStats {

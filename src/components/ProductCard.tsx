@@ -26,7 +26,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const { addToCart, updateStats, submitFeedback, getFeedbackForProduct } = useApp();
-  const ecoScore = calculateEcoScore(product.name, product.description);
+  const ecoScore = calculateEcoScore(product.name, product.description, product.carbonFootprint, product.recyclabilityRating);
   const aiInsight = getAIInsight(ecoScore);
   const brandScore = brandScores[product.brand] || 50;
   const productAlternatives = alternatives[product.id] || [];
@@ -141,9 +141,19 @@ export function ProductCard({ product }: ProductCardProps) {
           
           <Alert variant="destructive" className="border-danger">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Not Eco-Friendly!</AlertTitle>
-            <AlertDescription>
-              This product has a low EcoScore of {ecoScore.score}. It may harm the environment due to non-sustainable materials or packaging.
+            <AlertTitle>⚠️ Environmental Danger Alert</AlertTitle>
+            <AlertDescription className="space-y-2 mt-2">
+              <p className="font-semibold">This product has a low EcoScore of {ecoScore.score}.</p>
+              {ecoScore.dangerReasons && ecoScore.dangerReasons.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Why is this harmful to the environment?</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {ecoScore.dangerReasons.map((reason, idx) => (
+                      <li key={idx}>{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </AlertDescription>
           </Alert>
 
@@ -204,14 +214,20 @@ export function ProductCard({ product }: ProductCardProps) {
             {isDangerous && (
               <Alert variant="destructive" className="border-danger">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Environmental Impact Warning</AlertTitle>
-                <AlertDescription>
-                  This product has harmful environmental effects. Consider eco-friendly alternatives below.
+                <AlertTitle>⚠️ Environmental Danger</AlertTitle>
+                <AlertDescription className="space-y-2 mt-2">
+                  {ecoScore.dangerReasons && ecoScore.dangerReasons.length > 0 && (
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      {ecoScore.dangerReasons.map((reason, idx) => (
+                        <li key={idx}>{reason}</li>
+                      ))}
+                    </ul>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
 
-            <div className={`p-4 rounded-lg space-y-2 ${isDangerous ? 'bg-danger/10 border border-danger' : 'bg-muted'}`}>
+            <div className={`p-4 rounded-lg space-y-3 ${isDangerous ? 'bg-danger/10 border border-danger' : 'bg-muted'}`}>
               <div className="flex items-center justify-between">
                 <span className="font-semibold">EcoScore</span>
                 <div className="flex items-center gap-2">
@@ -224,9 +240,46 @@ export function ProductCard({ product }: ProductCardProps) {
               <p className="text-sm text-muted-foreground">
                 {ecoScore.explanation}
               </p>
-              <p className="text-sm italic text-muted-foreground mt-2">
+              <p className="text-sm italic text-muted-foreground">
                 {aiInsight}
               </p>
+              
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">♻️</span>
+                    <span className="text-xs font-medium">Recyclability</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all ${
+                          ecoScore.recyclabilityRating >= 70 ? 'bg-success' : 
+                          ecoScore.recyclabilityRating >= 40 ? 'bg-warning' : 'bg-danger'
+                        }`}
+                        style={{ width: `${ecoScore.recyclabilityRating}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold">{ecoScore.recyclabilityRating}%</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">💨</span>
+                    <span className="text-xs font-medium">CO₂ Footprint</span>
+                  </div>
+                  <div className="text-sm">
+                    <span className={`font-bold ${
+                      ecoScore.carbonFootprint < 2 ? 'text-success' : 
+                      ecoScore.carbonFootprint < 5 ? 'text-warning' : 'text-danger'
+                    }`}>
+                      {ecoScore.carbonFootprint} kg
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-1">CO₂</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="p-4 bg-muted rounded-lg">
@@ -244,20 +297,29 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
 
             {productAlternatives.length > 0 && ecoScore.score < 60 && (
-              <div className="p-4 bg-warning/10 border border-warning rounded-lg">
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <div className="p-4 bg-success/10 border border-success rounded-lg">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-success">
                   <span>🌿</span>
-                  Eco-Friendly Alternatives
+                  Recommended Eco-Friendly Alternatives
                 </h4>
-                <div className="space-y-2">
+                <p className="text-xs text-muted-foreground mb-3">
+                  These products serve the same purpose but with less environmental impact
+                </p>
+                <div className="space-y-3">
                   {productAlternatives.map(alt => (
-                    <div key={alt.id} className="flex items-center gap-3 p-2 bg-background rounded">
-                      <img src={alt.image} alt={alt.name} className="w-12 h-12 rounded object-cover" />
+                    <div key={alt.id} className="flex items-center gap-3 p-3 bg-background rounded-lg border hover:border-success transition-colors">
+                      <img src={alt.image} alt={alt.name} className="w-16 h-16 rounded object-cover" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">{alt.name}</p>
-                        <p className="text-xs text-muted-foreground">EcoScore: {alt.ecoScore}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-success font-semibold">
+                            EcoScore: {alt.ecoScore}
+                          </span>
+                          <span className="text-xs text-muted-foreground">•</span>
+                          <span className="text-xs font-semibold text-foreground">${alt.price}</span>
+                        </div>
                       </div>
-                      <span className="text-sm font-semibold">${alt.price}</span>
+                      <CheckCircle2 className="w-5 h-5 text-success" />
                     </div>
                   ))}
                 </div>

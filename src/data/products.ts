@@ -8,7 +8,9 @@ export const products: Product[] = [
     price: 12.99,
     image: 'https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=400&h=400&fit=crop',
     brand: 'EcoHome',
-    category: 'Personal Care'
+    category: 'Personal Care',
+    carbonFootprint: 0.8,
+    recyclabilityRating: 95
   },
   {
     id: '2',
@@ -17,7 +19,9 @@ export const products: Product[] = [
     price: 24.99,
     image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=400&h=400&fit=crop',
     brand: 'GreenLife',
-    category: 'Kitchen'
+    category: 'Kitchen',
+    carbonFootprint: 2.1,
+    recyclabilityRating: 90
   },
   {
     id: '3',
@@ -26,7 +30,9 @@ export const products: Product[] = [
     price: 8.99,
     image: 'https://images.unsplash.com/photo-1523362628745-0c100150b504?w=400&h=400&fit=crop',
     brand: 'QuickDrink',
-    category: 'Beverages'
+    category: 'Beverages',
+    carbonFootprint: 12.5,
+    recyclabilityRating: 20
   },
   {
     id: '4',
@@ -35,7 +41,9 @@ export const products: Product[] = [
     price: 15.99,
     image: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=400&fit=crop',
     brand: 'EarthBag',
-    category: 'Accessories'
+    category: 'Accessories',
+    carbonFootprint: 1.5,
+    recyclabilityRating: 88
   },
   {
     id: '5',
@@ -44,7 +52,9 @@ export const products: Product[] = [
     price: 39.99,
     image: 'https://images.unsplash.com/photo-1593642532400-2682810df593?w=400&h=400&fit=crop',
     brand: 'SunTech',
-    category: 'Electronics'
+    category: 'Electronics',
+    carbonFootprint: 3.2,
+    recyclabilityRating: 75
   },
   {
     id: '6',
@@ -53,7 +63,9 @@ export const products: Product[] = [
     price: 14.99,
     image: 'https://images.unsplash.com/photo-1584308972272-9e4e7685e80f?w=400&h=400&fit=crop',
     brand: 'StoreMart',
-    category: 'Kitchen'
+    category: 'Kitchen',
+    carbonFootprint: 8.7,
+    recyclabilityRating: 25
   },
   {
     id: '7',
@@ -62,7 +74,9 @@ export const products: Product[] = [
     price: 9.99,
     image: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=400&h=400&fit=crop',
     brand: 'EcoPaper',
-    category: 'Stationery'
+    category: 'Stationery',
+    carbonFootprint: 1.2,
+    recyclabilityRating: 92
   },
   {
     id: '8',
@@ -71,7 +85,9 @@ export const products: Product[] = [
     price: 18.99,
     image: 'https://images.unsplash.com/photo-1556910096-6f5e72db6803?w=400&h=400&fit=crop',
     brand: 'BeeEco',
-    category: 'Kitchen'
+    category: 'Kitchen',
+    carbonFootprint: 0.9,
+    recyclabilityRating: 85
   }
 ];
 
